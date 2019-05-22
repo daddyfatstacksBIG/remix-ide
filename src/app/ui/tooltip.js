@@ -22,8 +22,10 @@ class Toaster {
     }, 2000)
     animation(this.tooltip, css.animateTop.className)
   }
-  render (tooltipText, action, opts) {
+  render (tooltipText, actionElement, opts) {
     opts = defaultOptions(opts)
+    if (typeof(tooltipText) === 'object' && tooltipText.message !== undefined)
+      tooltipText = tooltipText.message
 
     if (typeof tooltipText === 'object') {
       if (tooltipText.message) {
@@ -49,7 +51,7 @@ class Toaster {
         ${shortTooltipText}
         ${button}
       </span>
-      ${action}
+      ${actionElement}
     </div>`
       let timeOut = () => {
         return setTimeout(() => {
