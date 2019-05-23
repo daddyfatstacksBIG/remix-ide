@@ -24,8 +24,9 @@ class Toaster {
   }
   render (tooltipText, actionElement, opts) {
     opts = defaultOptions(opts)
-    if (typeof(tooltipText) === 'object' && tooltipText.message !== undefined)
+    if (typeof (tooltipText) === 'object' && tooltipText.message !== undefined) {
       tooltipText = tooltipText.message
+    }
 
     if (typeof tooltipText === 'object') {
       if (tooltipText.message) {
