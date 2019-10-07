@@ -1,15 +1,15 @@
-const EventEmitter = require('events')
+const EventEmitter = require("events");
 
 class scrollAndClick extends EventEmitter {
-  command (target) {
+  command(target) {
     this.api
-    .scrollInto(target)
-    .click(target)
-    .perform(() => {
-      this.emit('complete')
-    })
-    return this
+      .scrollInto(target)
+      .click(target)
+      .perform(() => {
+        this.emit("complete");
+      });
+    return this;
   }
 }
 
-module.exports = scrollAndClick
+module.exports = scrollAndClick;

@@ -1,11 +1,11 @@
-import isElectron from 'is-electron'
-import { Plugin } from '@remixproject/engine'
-import * as packageJson from '../../../package.json'
-var yo = require('yo-yo')
-var modalDialog = require('../ui/modaldialog')
-var modalDialogCustom = require('../ui/modal-dialog-custom')
+import isElectron from "is-electron";
+import { Plugin } from "@remixproject/engine";
+import * as packageJson from "../../../package.json";
+var yo = require("yo-yo");
+var modalDialog = require("../ui/modaldialog");
+var modalDialogCustom = require("../ui/modal-dialog-custom");
 
-var csjs = require('csjs-inject')
+var csjs = require("csjs-inject");
 
 var css = csjs`
   .dialog {
@@ -16,85 +16,87 @@ var css = csjs`
     margin-bottom: 2em;
     word-break: break-word;
   }
-`
+`;
 
 const profile = {
-  name: 'remixd',
+  name: "remixd",
   methods: [],
   events: [],
-  description: 'Using Remixd daemon, allow to access file system',
-  kind: 'other',
+  description: "Using Remixd daemon, allow to access file system",
+  kind: "other",
   version: packageJson.version
-}
+};
 
 export class RemixdHandle extends Plugin {
-  constructor (fileSystemExplorer, locahostProvider, appManager) {
-    super(profile)
-    this.fileSystemExplorer = fileSystemExplorer
-    this.locahostProvider = locahostProvider
-    this.appManager = appManager
+  constructor(fileSystemExplorer, locahostProvider, appManager) {
+    super(profile);
+    this.fileSystemExplorer = fileSystemExplorer;
+    this.locahostProvider = locahostProvider;
+    this.appManager = appManager;
   }
 
-  deactivate () {
-    this.locahostProvider.close((error) => {
-      if (error) console.log(error)
-    })
+  deactivate() {
+    this.locahostProvider.close(error => {
+      if (error) console.log(error);
+    });
   }
 
-  activate () {
-    this.connectToLocalhost()
+  activate() {
+    this.connectToLocalhost();
   }
 
-  canceled () {
-    this.appManager.ensureDeactivated('remixd')
+  canceled() {
+    this.appManager.ensureDeactivated("remixd");
   }
 
   /**
-    * connect to localhost if no connection and render the explorer
-    * disconnect from localhost if connected and remove the explorer
-    *
-    * @param {String} txHash    - hash of the transaction
-    */
-  connectToLocalhost () {
-    let connection = (error) => {
+   * connect to localhost if no connection and render the explorer
+   * disconnect from localhost if connected and remove the explorer
+   *
+   * @param {String} txHash    - hash of the transaction
+   */
+  connectToLocalhost() {
+    let connection = error => {
       if (error) {
-        console.log(error)
+        console.log(error);
         modalDialogCustom.alert(
-          'Cannot connect to the remixd daemon.' +
-          'Please make sure you have the remixd running in the background.'
-        )
-        this.canceled()
+          "Cannot connect to the remixd daemon." +
+            "Please make sure you have the remixd running in the background."
+        );
+        this.canceled();
       } else {
-        this.fileSystemExplorer.ensureRoot()
+        this.fileSystemExplorer.ensureRoot();
       }
-    }
+    };
     if (this.locahostProvider.isConnected()) {
-      this.locahostProvider.close((error) => {
-        if (error) console.log(error)
-      })
+      this.locahostProvider.close(error => {
+        if (error) console.log(error);
+      });
     } else if (!isElectron()) {
       // warn the user only if he/she is in the browser context
       modalDialog(
-        'Connect to localhost',
+        "Connect to localhost",
         remixdDialog(),
-        { label: 'Connect',
+        {
+          label: "Connect",
           fn: () => {
-            this.locahostProvider.init((error) => connection(error))
+            this.locahostProvider.init(error => connection(error));
           }
         },
-        { label: 'Cancel',
+        {
+          label: "Cancel",
           fn: () => {
-            this.canceled()
+            this.canceled();
           }
         }
-      )
+      );
     } else {
-      this.locahostProvider.init((error) => connection(error))
+      this.locahostProvider.init(error => connection(error));
     }
   }
 }
 
-function remixdDialog () {
+function remixdDialog() {
   return yo`
     <div class=${css.dialog}>
       <div class=${css.dialogParagraph}>Interact with your file system from Remix. Click connect and find shared folder in the Remix file explorer (under localhost).
@@ -110,5 +112,5 @@ function remixdDialog () {
       </div>
       <div class=${css.dialogParagraph}>This feature is still in Alpha, so we recommend you to keep a copy of the shared folder.</div>
     </div>
-  `
+  `;
 }

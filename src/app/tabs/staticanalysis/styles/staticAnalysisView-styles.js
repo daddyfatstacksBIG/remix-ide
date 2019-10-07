@@ -1,4 +1,4 @@
-var csjs = require('csjs-inject')
+var csjs = require("csjs-inject");
 
 var css = csjs`
   .analysis {
@@ -34,6 +34,6 @@ var css = csjs`
     max-height: 300px;
     overflow-y: auto;
   }
-`
+`;
 
-module.exports = css
+module.exports = css;

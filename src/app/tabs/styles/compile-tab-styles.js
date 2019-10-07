@@ -1,4 +1,4 @@
-const csjs = require('csjs-inject')
+const csjs = require("csjs-inject");
 
 const css = csjs`
   .compilerArticle {
@@ -228,6 +228,6 @@ const css = csjs`
       70% { top: -0.3em; }
       100% { top: 0; }
   }
-`
+`;
 
-module.exports = css
+module.exports = css;

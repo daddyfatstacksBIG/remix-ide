@@ -1,4 +1,4 @@
-var csjs = require('csjs-inject')
+var csjs = require("csjs-inject");
 
 var css = csjs`
   .runTabView {
@@ -232,6 +232,6 @@ var css = csjs`
     font-size: 0.8rem;
     width: 70px;
   }
-`
+`;
 
-module.exports = css
+module.exports = css;
