@@ -1,28 +1,30 @@
-Build Artifact
-==============
+# Build Artifact
 
-When a compilation succeeds, Remix creates a JSON file for each compiled contract.
-The JSON file contains the compilation's artifact.  Actually, for this to happen, you need to check the **Generate contract metadata** box in the **General settings** section of the **Settings** module.  The .JSON file with the metadata will appear in the file explorer where the compiled file is located.
+When a compilation succeeds, Remix creates a JSON file for each compiled
+contract. The JSON file contains the compilation's artifact. Actually, for this
+to happen, you need to check the **Generate contract metadata** box in the
+**General settings** section of the **Settings** module. The .JSON file with the
+metadata will appear in the file explorer where the compiled file is located.
 
-This JSON file contains the link to the libraries, the bytecode, the deployed bytecode, the gas estimation, the method identifiers, and the ABI.
+This JSON file contains the link to the libraries, the bytecode, the deployed
+bytecode, the gas estimation, the method identifiers, and the ABI.
 
-You can write scripts that can access this file. 
+You can write scripts that can access this file.
 
-Library Deployment
-------------------
+## Library Deployment
 
 By default Remix automatically deploys needed libraries.
 
-`linkReferences` contains a map representing libraries which depend on the current contract. 
-Values are addresses of libraries used for linking the contract.
+`linkReferences` contains a map representing libraries which depend on the
+current contract. Values are addresses of libraries used for linking the
+contract.
 
-`autoDeployLib` defines if the libraries should be auto deployed by Remix or if the contract should be linked with libraries described in `linkReferences`
+`autoDeployLib` defines if the libraries should be auto deployed by Remix or if
+the contract should be linked with libraries described in `linkReferences`
 
-Note that Remix will resolve addresses corresponding to the current network.
-By default, a configuration key follow the form: `<network_name>:<networkd_id>`, but it is also possible
-to define `<network_name>` or `<network_id>` as keys.
-
-
+Note that Remix will resolve addresses corresponding to the current network. By
+default, a configuration key follow the form: `<network_name>:<networkd_id>`,
+but it is also possible to define `<network_name>` or `<network_id>` as keys.
 
 ```
 {
