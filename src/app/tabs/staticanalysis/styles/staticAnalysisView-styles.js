@@ -1,4 +1,4 @@
-var csjs = require('csjs-inject')
+var csjs = require("csjs-inject");
 
 var css = csjs`
   .analysis {
@@ -8,6 +8,7 @@ var css = csjs`
   .result {
     margin-top: 1%;
     max-height: 300px;
+    word-break: break-all;
   }
   .resultTitle {
     padding-top: 20px;
@@ -33,6 +34,6 @@ var css = csjs`
     max-height: 300px;
     overflow-y: auto;
   }
-`
+`;
 
-module.exports = css
+module.exports = css;

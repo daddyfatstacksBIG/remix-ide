@@ -1,29 +1,31 @@
-'use strict'
-const EventManager = require('../../lib/events')
-const yo = require('yo-yo')
-const csjs = require('csjs-inject')
-const ace = require('brace')
+"use strict";
+const EventManager = require("../../lib/events");
+const yo = require("yo-yo");
+const csjs = require("csjs-inject");
+const ace = require("brace");
+import { Plugin } from "@remixproject/engine";
+import * as packageJson from "../../../package.json";
 
-const globalRegistry = require('../../global/registry')
-const SourceHighlighters = require('./SourceHighlighters')
+const globalRegistry = require("../../global/registry");
+const SourceHighlighters = require("./SourceHighlighters");
 
-const Range = ace.acequire('ace/range').Range
-require('brace/ext/language_tools')
-require('brace/ext/searchbox')
-const langTools = ace.acequire('ace/ext/language_tools')
-require('ace-mode-solidity/build/remix-ide/mode-solidity')
-require('ace-mode-move/build/remix-ide/mode-move')
-require('brace/mode/javascript')
-require('brace/mode/python')
-require('brace/mode/json')
-require('brace/theme/chaos')
-require('brace/theme/chrome')
+const Range = ace.acequire("ace/range").Range;
+require("brace/ext/language_tools");
+require("brace/ext/searchbox");
+const langTools = ace.acequire("ace/ext/language_tools");
+require("ace-mode-solidity/build/remix-ide/mode-solidity");
+require("ace-mode-move/build/remix-ide/mode-move");
+require("brace/mode/javascript");
+require("brace/mode/python");
+require("brace/mode/json");
+require("brace/theme/chaos");
+require("brace/theme/chrome");
 
 const css = csjs`
   .ace-editor {
     width     : 100%;
   }
-`
+`;
 document.head.appendChild(yo`
   <style>
     .ace-tm .ace_gutter,
@@ -35,197 +37,220 @@ document.head.appendChild(yo`
       background-color: var(--secondary);
     }
   </style>
-`)
+`);
 
-class Editor {
+const profile = {
+  displayName: "Editor",
+  name: "editor",
+  description: "service - editor",
+  version: packageJson.version,
+  methods: [
+    "highlight",
+    "discardHighlight",
+    "clearAnnotations",
+    "addAnnotation"
+  ]
+};
 
-  constructor (opts = {}, themeModule) {
+class Editor extends Plugin {
+  constructor(opts = {}, themeModule) {
+    super(profile);
     // Dependancies
-    this._components = {}
-    this._components.registry = globalRegistry
+    this._components = {};
+    this._components.registry = globalRegistry;
     this._deps = {
-      config: this._components.registry.get('config').api
-    }
+      config: this._components.registry.get("config").api
+    };
 
     this._themes = {
-      'light': 'chrome',
-      'dark': 'chaos'
-    }
-    themeModule.events.on('themeChanged', (theme) => {
-      this.setTheme(theme.quality)
-    })
+      light: "chrome",
+      dark: "chaos"
+    };
+    themeModule.events.on("themeChanged", theme => {
+      this.setTheme(theme.quality);
+    });
 
     // Init
-    this.event = new EventManager()
-    this.sessions = {}
-    this.sourceAnnotations = []
-    this.readOnlySessions = {}
-    this.previousInput = ''
-    this.saveTimeout = null
-    this.sourceHighlighters = new SourceHighlighters()
-    this.emptySession = this._createSession('')
+    this.event = new EventManager();
+    this.sessions = {};
+    this.sourceAnnotations = [];
+    this.readOnlySessions = {};
+    this.previousInput = "";
+    this.saveTimeout = null;
+    this.sourceHighlighters = new SourceHighlighters();
+    this.emptySession = this._createSession("");
     this.modes = {
-      sol: 'ace/mode/solidity',
-      mvir: 'ace/mode/move',
-      js: 'ace/mode/javascript',
-      py: 'ace/mode/python',
-      vy: 'ace/mode/python',
-      txt: 'ace/mode/text',
-      json: 'ace/mode/json',
-      abi: 'ace/mode/json'
-    }
+      sol: "ace/mode/solidity",
+      mvir: "ace/mode/move",
+      js: "ace/mode/javascript",
+      py: "ace/mode/python",
+      vy: "ace/mode/python",
+      txt: "ace/mode/text",
+      json: "ace/mode/json",
+      abi: "ace/mode/json"
+    };
 
     // Editor Setup
-    const el = yo`<div id="input"></div>`
-    this.editor = ace.edit(el)
+    const el = yo`<div id="input"></div>`;
+    this.editor = ace.edit(el);
 
-    ace.acequire('ace/ext/language_tools')
+    ace.acequire("ace/ext/language_tools");
 
     // Unmap ctrl-l & cmd-l
     this.editor.commands.bindKeys({
-      'ctrl-L': null,
-      'Command-L': null
-    })
+      "ctrl-L": null,
+      "Command-L": null
+    });
 
     // shortcuts for "Ctrl-"" and "Ctrl+"" to increase/decrease font size of the editor
     this.editor.commands.addCommand({
-      name: 'increasefontsizeEqual',
-      bindKey: {win: 'Ctrl-=', mac: 'Command-='},
-      exec: (editor) => {
-        this.editorFontSize(1)
+      name: "increasefontsizeEqual",
+      bindKey: { win: "Ctrl-=", mac: "Command-=" },
+      exec: editor => {
+        this.editorFontSize(1);
       },
       readOnly: true
-    })
+    });
 
     this.editor.commands.addCommand({
-      name: 'increasefontsizePlus',
-      bindKey: {win: 'Ctrl-+', mac: 'Command-+'},
-      exec: (editor) => {
-        this.editorFontSize(1)
+      name: "increasefontsizePlus",
+      bindKey: { win: "Ctrl-+", mac: "Command-+" },
+      exec: editor => {
+        this.editorFontSize(1);
       },
       readOnly: true
-    })
+    });
 
     this.editor.commands.addCommand({
-      name: 'decreasefontsize',
-      bindKey: {win: 'Ctrl--', mac: 'Command--'},
-      exec: (editor) => {
-        this.editorFontSize(-1)
+      name: "decreasefontsize",
+      bindKey: { win: "Ctrl--", mac: "Command--" },
+      exec: editor => {
+        this.editorFontSize(-1);
       },
       readOnly: true
-    })
+    });
 
-    this.editor.setShowPrintMargin(false)
-    this.editor.resize(true)
+    this.editor.setShowPrintMargin(false);
+    this.editor.resize(true);
 
     this.editor.setOptions({
       enableBasicAutocompletion: true,
       enableLiveAutocompletion: true
-    })
+    });
 
-    el.className += ' ' + css['ace-editor']
-    el.editor = this.editor // required to access the editor during tests
-    this.render = () => el
+    el.className += " " + css["ace-editor"];
+    el.editor = this.editor; // required to access the editor during tests
+    this.render = () => el;
 
     // Completer for editor
     const flowCompleter = {
       getCompletions: (editor, session, pos, prefix, callback) => {
         // @TODO add here other propositions
       }
-    }
-    langTools.addCompleter(flowCompleter)
+    };
+    langTools.addCompleter(flowCompleter);
 
     // zoom with Ctrl+wheel
-    window.addEventListener('wheel', (e) => {
+    window.addEventListener("wheel", e => {
       if (e.ctrlKey && Math.abs(e.wheelY) > 5) {
-        this.editorFontSize(e.wheelY > 0 ? 1 : -1)
+        this.editorFontSize(e.wheelY > 0 ? 1 : -1);
       }
-    })
+    });
 
     // EVENTS LISTENERS
 
     // Gutter Mouse down
-    this.editor.on('guttermousedown', e => {
-      const target = e.domEvent.target
-      if (target.className.indexOf('ace_gutter-cell') === -1) {
-        return
+    this.editor.on("guttermousedown", e => {
+      const target = e.domEvent.target;
+      if (target.className.indexOf("ace_gutter-cell") === -1) {
+        return;
       }
-      const row = e.getDocumentPosition().row
-      const breakpoints = e.editor.session.getBreakpoints()
+      const row = e.getDocumentPosition().row;
+      const breakpoints = e.editor.session.getBreakpoints();
       for (const k in breakpoints) {
         if (k === row.toString()) {
-          this.event.trigger('breakpointCleared', [this.currentSession, row])
-          e.editor.session.clearBreakpoint(row)
-          e.stop()
-          return
+          this.event.trigger("breakpointCleared", [this.currentSession, row]);
+          e.editor.session.clearBreakpoint(row);
+          e.stop();
+          return;
         }
       }
-      this.setBreakpoint(row)
-      this.event.trigger('breakpointAdded', [this.currentSession, row])
-      e.stop()
-    })
+      this.setBreakpoint(row);
+      this.event.trigger("breakpointAdded", [this.currentSession, row]);
+      e.stop();
+    });
 
     // Do setup on initialisation here
-    this.editor.on('changeSession', () => {
-      this._onChange()
-      this.event.trigger('sessionSwitched', [])
+    this.editor.on("changeSession", () => {
+      this._onChange();
+      this.event.trigger("sessionSwitched", []);
 
-      this.editor.getSession().on('change', () => {
-        this._onChange()
-        this.event.trigger('contentChanged', [])
-      })
-    })
+      this.editor.getSession().on("change", () => {
+        this._onChange();
+        this.event.trigger("contentChanged", []);
+      });
+    });
   }
 
-  setTheme (type) {
-    this.editor.setTheme('ace/theme/' + this._themes[type])
+  highlight(position, filePath, hexColor) {
+    const { from } = this.currentRequest;
+    this.sourceHighlighters.highlight(position, filePath, hexColor, from);
   }
 
-  _onChange () {
-    const currentFile = this._deps.config.get('currentFile')
+  discardHighlight() {
+    const { from } = this.currentRequest;
+    this.sourceHighlighters.discardHighlight(from);
+  }
+
+  setTheme(type) {
+    this.editor.setTheme("ace/theme/" + this._themes[type]);
+  }
+
+  _onChange() {
+    const currentFile = this._deps.config.get("currentFile");
     if (!currentFile) {
-      return
+      return;
     }
-    const input = this.get(currentFile)
+    const input = this.get(currentFile);
     if (!input) {
-      return
+      return;
     }
     // if there's no change, don't do anything
     if (input === this.previousInput) {
-      return
+      return;
     }
-    this.previousInput = input
+    this.previousInput = input;
 
     // fire storage update
     // NOTE: save at most once per 5 seconds
     if (this.saveTimeout) {
-      window.clearTimeout(this.saveTimeout)
+      window.clearTimeout(this.saveTimeout);
     }
     this.saveTimeout = window.setTimeout(() => {
-      this.event.trigger('requiringToSaveCurrentfile', [])
-    }, 5000)
+      this.event.trigger("requiringToSaveCurrentfile", []);
+    }, 5000);
   }
 
-  _switchSession (path) {
-    this.currentSession = path
-    this.editor.setSession(this.sessions[this.currentSession])
-    this.editor.setReadOnly(this.readOnlySessions[this.currentSession])
-    this.editor.focus()
+  _switchSession(path) {
+    this.currentSession = path;
+    this.editor.setSession(this.sessions[this.currentSession]);
+    this.editor.setReadOnly(this.readOnlySessions[this.currentSession]);
+    this.editor.focus();
   }
 
   /**
    * Get Ace mode base of the extension of the session file
    * @param {string} path Path of the file
    */
-  _getMode (path) {
-    let ext = path.indexOf('.') !== -1 ? /[^.]+/.exec(path) : null
+  _getMode(path) {
+    let ext = path.indexOf(".") !== -1 ? /[^.]+/.exec(path) : null;
     if (ext) {
-      ext = path.replace(ext[0] + '.', '') // we get <ext>
-    } else ext = 'txt'
-    ext = ext.split('#')
-    if (!ext.length) return this.modes['txt']
-    ext = ext[0]
-    return ext && this.modes[ext] ? this.modes[ext] : this.modes['txt']
+      ext = path.replace(ext[0] + ".", ""); // we get <ext>
+    } else ext = "txt";
+    ext = ext.split("#");
+    if (!ext.length) return this.modes["txt"];
+    ext = ext[0];
+    return ext && this.modes[ext] ? this.modes[ext] : this.modes["txt"];
   }
 
   /**
@@ -233,30 +258,30 @@ class Editor {
    * @param {string} content Content of the file to open
    * @param {string} mode Ace Mode for this file [Default is `text`]
    */
-  _createSession (content, mode) {
-    const s = new ace.EditSession(content)
-    s.setMode(mode || 'ace/mode/text')
-    s.setUndoManager(new ace.UndoManager())
-    s.setTabSize(4)
-    s.setUseSoftTabs(true)
-    return s
+  _createSession(content, mode) {
+    const s = new ace.EditSession(content);
+    s.setMode(mode || "ace/mode/text");
+    s.setUndoManager(new ace.UndoManager());
+    s.setTabSize(4);
+    s.setUseSoftTabs(true);
+    return s;
   }
 
   /**
    * Attempts to find the string in the current document
    * @param {string} string
    */
-  find (string) {
-    return this.editor.find(string)
+  find(string) {
+    return this.editor.find(string);
   }
 
   /**
    * Display an Empty read-only session
    */
-  displayEmptyReadOnlySession () {
-    this.currentSession = null
-    this.editor.setSession(this.emptySession)
-    this.editor.setReadOnly(true)
+  displayEmptyReadOnlySession() {
+    this.currentSession = null;
+    this.editor.setSession(this.emptySession);
+    this.editor.setReadOnly(true);
   }
 
   /**
@@ -264,18 +289,18 @@ class Editor {
    * @param {number} row Line index of the breakpoint
    * @param {string} className Class of the breakpoint
    */
-  setBreakpoint (row, className) {
-    this.editor.session.setBreakpoint(row, className)
+  setBreakpoint(row, className) {
+    this.editor.session.setBreakpoint(row, className);
   }
 
   /**
    * Increment the font size (in pixels) for the editor text.
    * @param {number} incr The amount of pixels to add to the font.
    */
-  editorFontSize (incr) {
-    let newSize = this.editor.getFontSize() + incr
+  editorFontSize(incr) {
+    let newSize = this.editor.getFontSize() + incr;
     if (newSize >= 6) {
-      this.editor.setFontSize(newSize)
+      this.editor.setFontSize(newSize);
     }
   }
 
@@ -283,9 +308,9 @@ class Editor {
    * Set the text in the current session, if any.
    * @param {string} text New text to be place.
    */
-  setText (text) {
+  setText(text) {
     if (this.currentSession && this.sessions[this.currentSession]) {
-      this.sessions[this.currentSession].setValue(text)
+      this.sessions[this.currentSession].setValue(text);
     }
   }
 
@@ -294,15 +319,15 @@ class Editor {
    * @param {string} path Path of the session to open.
    * @param {string} content Content of the document or update.
    */
-  open (path, content) {
+  open(path, content) {
     if (!this.sessions[path]) {
-      const session = this._createSession(content, this._getMode(path))
-      this.sessions[path] = session
-      this.readOnlySessions[path] = false
+      const session = this._createSession(content, this._getMode(path));
+      this.sessions[path] = session;
+      this.readOnlySessions[path] = false;
     } else if (this.sessions[path].getValue() !== content) {
-      this.sessions[path].setValue(content)
+      this.sessions[path].setValue(content);
     }
-    this._switchSession(path)
+    this._switchSession(path);
   }
 
   /**
@@ -310,21 +335,21 @@ class Editor {
    * @param {string} path Path of the session to open.
    * @param {string} content Content of the document or update.
    */
-  openReadOnly (path, content) {
+  openReadOnly(path, content) {
     if (!this.sessions[path]) {
-      const session = this._createSession(content, this._getMode(path))
-      this.sessions[path] = session
-      this.readOnlySessions[path] = true
+      const session = this._createSession(content, this._getMode(path));
+      this.sessions[path] = session;
+      this.readOnlySessions[path] = true;
     }
-    this._switchSession(path)
+    this._switchSession(path);
   }
 
   /**
    * Content of the current session
    * @return {String} content of the file referenced by @arg path
    */
-  currentContent () {
-    return this.get(this.current())
+  currentContent() {
+    return this.get(this.current());
   }
 
   /**
@@ -333,11 +358,11 @@ class Editor {
    * @param {string} path Path of the session to get.
    * @return {String} content of the file referenced by @arg path
    */
-  get (path) {
+  get(path) {
     if (!path || this.currentSession === path) {
-      return this.editor.getValue()
+      return this.editor.getValue();
     } else if (this.sessions[path]) {
-      return this.sessions[path].getValue()
+      return this.sessions[path].getValue();
     }
   }
 
@@ -346,30 +371,30 @@ class Editor {
    * returns `undefined` if no session is being editer
    * @return {String} path of the current session
    */
-  current () {
+  current() {
     if (this.editor.getSession() === this.emptySession) {
-      return
+      return;
     }
-    return this.currentSession
+    return this.currentSession;
   }
 
   /**
    * The position of the cursor
    */
-  getCursorPosition () {
+  getCursorPosition() {
     return this.editor.session.doc.positionToIndex(
       this.editor.getCursorPosition(),
       0
-    )
+    );
   }
 
   /**
    * Remove the current session from the list of sessions.
    */
-  discardCurrentSession () {
+  discardCurrentSession() {
     if (this.sessions[this.currentSession]) {
-      delete this.sessions[this.currentSession]
-      this.currentSession = null
+      delete this.sessions[this.currentSession];
+      this.currentSession = null;
     }
   }
 
@@ -377,27 +402,27 @@ class Editor {
    * Remove a session based on its path.
    * @param {string} path
    */
-  discard (path) {
-    if (this.sessions[path]) delete this.sessions[path]
-    if (this.currentSession === path) this.currentSession = null
+  discard(path) {
+    if (this.sessions[path]) delete this.sessions[path];
+    if (this.currentSession === path) this.currentSession = null;
   }
 
   /**
    * Resize the editor, and sets whether or not line wrapping is enabled.
    * @param {boolean} useWrapMode Enable (or disable) wrap mode
    */
-  resize (useWrapMode) {
-    this.editor.resize()
-    const session = this.editor.getSession()
-    session.setUseWrapMode(useWrapMode)
+  resize(useWrapMode) {
+    this.editor.resize();
+    const session = this.editor.getSession();
+    session.setUseWrapMode(useWrapMode);
     if (session.getUseWrapMode()) {
-      const characterWidth = this.editor.renderer.characterWidth
+      const characterWidth = this.editor.renderer.characterWidth;
       const contentWidth = this.editor.container.ownerDocument.getElementsByClassName(
-        'ace_scroller'
-      )[0].clientWidth
+        "ace_scroller"
+      )[0].clientWidth;
 
       if (contentWidth > 0) {
-        session.setWrapLimit(parseInt(contentWidth / characterWidth, 10))
+        session.setWrapLimit(parseInt(contentWidth / characterWidth, 10));
       }
     }
   }
@@ -408,17 +433,17 @@ class Editor {
    * @param {string} source Path of the session to add the mark on.
    * @param {string} cssClass css to apply to the mark.
    */
-  addMarker (lineColumnPos, source, cssClass) {
+  addMarker(lineColumnPos, source, cssClass) {
     const currentRange = new Range(
       lineColumnPos.start.line,
       lineColumnPos.start.column,
       lineColumnPos.end.line,
       lineColumnPos.end.column
-    )
+    );
     if (this.sessions[source]) {
-      return this.sessions[source].addMarker(currentRange, cssClass)
+      return this.sessions[source].addMarker(currentRange, cssClass);
     }
-    return null
+    return null;
   }
 
   /**
@@ -428,8 +453,8 @@ class Editor {
    * @param {boolean} animate If true animates scrolling
    * @param {Function} callback Function to be called when the animation has finished
    */
-  scrollToLine (line, center, animate, callback) {
-    this.editor.scrollToLine(line, center, animate, callback)
+  scrollToLine(line, center, animate, callback) {
+    this.editor.scrollToLine(line, center, animate, callback);
   }
 
   /**
@@ -437,35 +462,35 @@ class Editor {
    * @param {string} markerId Id of the marker
    * @param {string} source Path of the session
    */
-  removeMarker (markerId, source) {
+  removeMarker(markerId, source) {
     if (this.sessions[source]) {
-      this.sessions[source].removeMarker(markerId)
+      this.sessions[source].removeMarker(markerId);
     }
   }
 
   /**
    * Clears all the annotations for the current session.
    */
-  clearAnnotations () {
-    this.sourceAnnotations = []
-    this.editor.getSession().clearAnnotations()
+  clearAnnotations() {
+    this.sourceAnnotations = [];
+    this.editor.getSession().clearAnnotations();
   }
 
   /**
    * Add an annotation to the current session.
    * @param {Object} annotation
    */
-  addAnnotation (annotation) {
-    this.sourceAnnotations[this.sourceAnnotations.length] = annotation
-    this.setAnnotations(this.sourceAnnotations)
+  addAnnotation(annotation) {
+    this.sourceAnnotations[this.sourceAnnotations.length] = annotation;
+    this.setAnnotations(this.sourceAnnotations);
   }
 
   /**
    * Set a list of annotations to the current session.
    * @param {Array<Object>} annotation
    */
-  setAnnotations (sourceAnnotations) {
-    this.editor.getSession().setAnnotations(sourceAnnotations)
+  setAnnotations(sourceAnnotations) {
+    this.editor.getSession().setAnnotations(sourceAnnotations);
   }
 
   /**
@@ -473,10 +498,10 @@ class Editor {
    * @param {number} line
    * @param {number} col
    */
-  gotoLine (line, col) {
-    this.editor.focus()
-    this.editor.gotoLine(line + 1, col - 1, true)
+  gotoLine(line, col) {
+    this.editor.focus();
+    this.editor.gotoLine(line + 1, col - 1, true);
   }
 }
 
-module.exports = Editor
+module.exports = Editor;

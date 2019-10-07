@@ -1,8 +1,7 @@
-var csjs = require('csjs-inject')
+var csjs = require("csjs-inject");
 
 var css = csjs`
   .runTabView {
-    padding: 2%;
     display: flex;
     flex-direction: column;
   }
@@ -159,18 +158,6 @@ var css = csjs`
     display: flex;
     align-items: center;
   }
-  .transact {
-    color: var(--warning);
-    margin-right: .3em;
-  }
-  .payable {
-    color: var(--warning);
-    margin-right: .3em;
-  }
-  .call {
-    color: var(--info);
-    margin-right: .3em;
-  }
   .pendingContainer {
     display: flex;
     align-items: baseline;
@@ -245,6 +232,6 @@ var css = csjs`
     font-size: 0.8rem;
     width: 70px;
   }
-`
+`;
 
-module.exports = css
+module.exports = css;

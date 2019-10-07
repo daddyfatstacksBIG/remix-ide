@@ -1,6 +1,6 @@
-var yo = require('yo-yo')
+var yo = require("yo-yo");
 // -------------- copyToClipboard ----------------------
-var csjs = require('csjs-inject')
+var csjs = require("csjs-inject");
 
 var css = csjs`
     .container
@@ -28,32 +28,41 @@ var css = csjs`
       list-style: none;
       margin: 0px;
     }
-`
+`;
 
 module.exports = (event, items) => {
-  event.preventDefault()
+  event.preventDefault();
 
-  function hide (event, force) {
-    if (container && container.parentElement && (force || (event.target !== container))) {
-      container.parentElement.removeChild(container)
+  function hide(event, force) {
+    if (
+      container &&
+      container.parentElement &&
+      (force || event.target !== container)
+    ) {
+      container.parentElement.removeChild(container);
     }
-    window.removeEventListener('click', hide)
+    window.removeEventListener("click", hide);
   }
 
   var menu = Object.keys(items).map((item, index) => {
-    var current = yo`<li id="menuitem${item.toLowerCase()}" class=${css.liitem}>${item}</li>`
-    current.onclick = () => { hide(null, true); items[item]() }
-    return current
-  })
-  var container = yo`<div class="${css.container} bg-light"><ul id='menuitems'>${menu}</ul></div>`
-  container.style.left = event.pageX + 'px'
-  container.style.top = event.pageY + 'px'
-  container.style.display = 'block'
+    var current = yo`<li id="menuitem${item.toLowerCase()}" class=${
+      css.liitem
+    }>${item}</li>`;
+    current.onclick = () => {
+      hide(null, true);
+      items[item]();
+    };
+    return current;
+  });
+  var container = yo`<div class="p-1 ${css.container} bg-light"><ul id='menuitems'>${menu}</ul></div>`;
+  container.style.left = event.pageX + "px";
+  container.style.top = event.pageY + "px";
+  container.style.display = "block";
 
-  document.querySelector('body').appendChild(container)
+  document.querySelector("body").appendChild(container);
   setTimeout(() => {
-    window.addEventListener('click', hide)
-  }, 500)
+    window.addEventListener("click", hide);
+  }, 500);
 
-  return { hide }
-}
+  return { hide };
+};

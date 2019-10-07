@@ -1,4 +1,4 @@
-const csjs = require('csjs-inject')
+const csjs = require("csjs-inject");
 
 const css = csjs`
   .compilerArticle {
@@ -36,6 +36,13 @@ const css = csjs`
   .contract {
     display: block;
     margin: 3% 0;
+  }
+  .nightlyBuilds {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-content: center;
+    align-items: center;
   }
   .autocompileContainer {
     display: flex;
@@ -147,8 +154,12 @@ const css = csjs`
   .errorBlobs {
     padding-left: 5px;
     padding-right: 5px;
+    word-break: break-all;
   }
-
+  .storageLogo {
+    width: 20px;
+    height: 20px;
+  }
   .spinningIcon {
     display: inline-block;
     position: relative;
@@ -217,6 +228,6 @@ const css = csjs`
       70% { top: -0.3em; }
       100% { top: 0; }
   }
-`
+`;
 
-module.exports = css
+module.exports = css;

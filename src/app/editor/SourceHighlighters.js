@@ -1,42 +1,33 @@
-'use strict'
-const SourceHighlighter = require('./sourceHighlighter')
-
-import { Plugin } from '@remixproject/engine'
-import * as packageJson from '../../../package.json'
-
-const profile = {
-  displayName: 'Editor',
-  name: 'editor',
-  description: 'service - highlight source code',
-  version: packageJson.version,
-  methods: ['highlight', 'discardHighlight']
-}
+"use strict";
+const SourceHighlighter = require("./sourceHighlighter");
 
 // EditorApi:
 // - methods: ['highlight', 'discardHighlight'],
 
-class SourceHighlighters extends Plugin {
-
-  constructor () {
-    super(profile)
-    this.highlighters = {}
+class SourceHighlighters {
+  constructor() {
+    this.highlighters = {};
   }
 
-  highlight (position, filePath, hexColor) {
-    const { from } = this.currentRequest
+  highlight(position, filePath, hexColor, from) {
     try {
-      if (!this.highlighters[from]) this.highlighters[from] = new SourceHighlighter()
-      this.highlighters[from].currentSourceLocation(null)
-      this.highlighters[from].currentSourceLocationFromfileName(position, filePath, hexColor)
+      if (!this.highlighters[from])
+        this.highlighters[from] = new SourceHighlighter();
+      this.highlighters[from].currentSourceLocation(null);
+      this.highlighters[from].currentSourceLocationFromfileName(
+        position,
+        filePath,
+        hexColor
+      );
     } catch (e) {
-      throw e
+      throw e;
     }
   }
 
-  discardHighlight () {
-    const { from } = this.currentRequest
-    if (this.highlighters[from]) this.highlighters[from].currentSourceLocation(null)
+  discardHighlight(from) {
+    if (this.highlighters[from])
+      this.highlighters[from].currentSourceLocation(null);
   }
 }
 
-module.exports = SourceHighlighters
+module.exports = SourceHighlighters;

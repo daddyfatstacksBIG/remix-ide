@@ -1,13 +1,19 @@
 "use strict";
 
-var async = require("async");
-var swarmgw = require("swarmgw")();
+const async = require("async");
+const IpfsClient = require("ipfs-mini");
 
-module.exports = (contract, fileManager, cb, swarmVerifiedPublishCallBack) => {
+const ipfsNodes = [
+  new IpfsClient({ host: "ipfs.komputing.org", port: 443, protocol: "https" }),
+  new IpfsClient({ host: "ipfs.infura.io", port: 5001, protocol: "https" })
+];
+
+module.exports = (contract, fileManager, cb, ipfsVerifiedPublishCallBack) => {
   // gather list of files to publish
   var sources = [];
 
   var metadata;
+
   try {
     metadata = JSON.parse(contract.metadata);
   } catch (e) {
@@ -24,9 +30,7 @@ module.exports = (contract, fileManager, cb, swarmVerifiedPublishCallBack) => {
       // find hash
       var hash;
       try {
-        hash = metadata.sources[fileName].urls[0].match(
-          "(bzzr|bzz-raw)://(.+)"
-        )[1];
+        hash = metadata.sources[fileName].urls[1].match("dweb:/ipfs/(.+)")[1];
       } catch (e) {
         return cb("Metadata inconsistency");
       }
@@ -53,32 +57,30 @@ module.exports = (contract, fileManager, cb, swarmVerifiedPublishCallBack) => {
         async.eachSeries(
           sources,
           function(item, cb) {
-            swarmVerifiedPublish(item.content, item.hash, (error, result) => {
+            ipfsVerifiedPublish(item.content, item.hash, (error, result) => {
               try {
-                item.hash = result.url.match("bzz-raw://(.+)")[1];
+                item.hash = result.url.match("dweb:/ipfs/(.+)")[1];
               } catch (e) {
                 item.hash = "<Metadata inconsistency> - " + item.fileName;
               }
-              if (!error && swarmVerifiedPublishCallBack)
-                swarmVerifiedPublishCallBack(item);
+              if (!error && ipfsVerifiedPublishCallBack)
+                ipfsVerifiedPublishCallBack(item);
               item.output = result;
               uploaded.push(item);
-              // TODO this is a fix cause Solidity metadata does not contain the right swarm hash (poc 0.3)
-              metadata.sources[item.filename].urls[0] = result.url;
               cb(error);
             });
           },
           () => {
             const metadataContent = JSON.stringify(metadata);
-            swarmVerifiedPublish(metadataContent, "", (error, result) => {
+            ipfsVerifiedPublish(metadataContent, "", (error, result) => {
               try {
-                contract.metadataHash = result.url.match("bzz-raw://(.+)")[1];
+                contract.metadataHash = result.url.match("dweb:/ipfs/(.+)")[1];
               } catch (e) {
                 contract.metadataHash =
                   "<Metadata inconsistency> - metadata.json";
               }
-              if (!error && swarmVerifiedPublishCallBack) {
-                swarmVerifiedPublishCallBack({
+              if (!error && ipfsVerifiedPublishCallBack) {
+                ipfsVerifiedPublishCallBack({
                   content: metadataContent,
                   hash: contract.metadataHash
                 });
@@ -98,19 +100,27 @@ module.exports = (contract, fileManager, cb, swarmVerifiedPublishCallBack) => {
   );
 };
 
-function swarmVerifiedPublish(content, expectedHash, cb) {
-  swarmgw.put(content, function(err, ret) {
-    if (err) {
-      cb(err);
-    } else if (ret !== expectedHash) {
+async function ipfsVerifiedPublish(content, expectedHash, cb) {
+  try {
+    const results = await severalGatewaysPush(content);
+    if (results !== expectedHash) {
       cb(null, {
         message:
           "hash mismatch between solidity bytecode and uploaded content.",
-        url: "bzz-raw://" + ret,
-        hash: ret
+        url: "dweb:/ipfs/" + results,
+        hash: results
       });
     } else {
-      cb(null, { message: "ok", url: "bzz-raw://" + ret, hash: ret });
+      cb(null, { message: "ok", url: "dweb:/ipfs/" + results, hash: results });
     }
-  });
+  } catch (error) {
+    cb(error);
+  }
+}
+
+function severalGatewaysPush(content) {
+  const invert = p =>
+    new Promise((resolve, reject) => p.then(reject).catch(resolve)); // Invert res and rej
+  const promises = ipfsNodes.map(node => invert(node.add(content)));
+  return invert(Promise.all(promises));
 }
